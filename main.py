@@ -1,6 +1,7 @@
 import sys
 import pygame
 import random
+import copy
 
 size = width, height = 650, 650
 
@@ -69,14 +70,7 @@ class Grid:
     def move_left(self):
         changed = False
         for row in self._grid:
-            new_row = [i for i in row if i]
-            for i in range(len(new_row) - 1):
-                if new_row[i] == new_row[i + 1]:
-                    new_row[i] *= 2
-                    new_row.pop(i + 1)
-                    break
-
-            new_row += [0] * (4 - len(new_row))
+            new_row = Grid._join_blocks(row)
             if row != new_row:
                 changed = True
                 row[:] = new_row[:]
@@ -88,14 +82,7 @@ class Grid:
     def move_right(self):
         changed = False
         for row in self._grid:
-            new_row = [i for i in row if i]
-            for i in range(len(new_row) - 1, 0, -1):
-                if new_row[i] == new_row[i - 1]:
-                    new_row[i] *= 2
-                    new_row.pop(i - 1)
-                    break
-
-            new_row = [0] * (4 - len(new_row)) + new_row
+            new_row = new_row = Grid._join_blocks(row[::-1])[::-1]
             if row != new_row:
                 changed = True
                 row[:] = new_row[:]
@@ -106,16 +93,12 @@ class Grid:
 
     def move_up(self):
         changed = False
-        for col in range(4):
-            new_col = [self._grid[i][col] for i in range(4) if self._grid[i][col]]
-            for i in range(len(new_col) - 1):
-                if new_col[i] == new_col[i + 1]:
-                    new_col[i] *= 2
-                    new_col.pop(i + 1)
-                    break
 
-            new_col += [0] * (4 - len(new_col))
-            if new_col != [self._grid[i][col] for i in range(4)]:
+        for col in range(4):
+            column = [self._grid[i][col] for i in range(4)]
+            new_col = Grid._join_blocks(column)
+
+            if new_col != column:
                 changed = True
                 for i in range(4):
                     self._grid[i][col] = new_col[i]
@@ -127,15 +110,10 @@ class Grid:
     def move_down(self):
         changed = False
         for col in range(4):
-            new_col = [self._grid[i][col] for i in range(4) if self._grid[i][col]]
-            for i in range(len(new_col) - 1, 0, -1):
-                if new_col[i] == new_col[i - 1]:
-                    new_col[i] *= 2
-                    new_col.pop(i - 1)
-                    break
+            column = [self._grid[i][col] for i in range(4)][::-1]
+            new_col = Grid._join_blocks(column)[::-1]
 
-            new_col = [0] * (4 - len(new_col)) + new_col
-            if new_col != [self._grid[i][col] for i in range(4)]:
+            if new_col != column:
                 changed = True
                 for i in range(4):
                     self._grid[i][col] = new_col[i]
@@ -143,6 +121,28 @@ class Grid:
         if changed:
             self.fill_random_cell()
         return self
+
+    @staticmethod
+    def _join_blocks(row):
+        count = len(row)
+
+        row = [i for i in row if i]
+        new_row = []
+
+        while row:
+            if len(row) == 1:
+                new_row.append(row[0])
+                break
+
+            if row[0] == row[1]:
+                row[0] *= 2
+                row.pop(1)
+
+            new_row.append(row[0])
+            row.pop(0)
+
+        new_row.extend([0 for i in range(4 - len(new_row))])
+        return new_row
 
     @property
     def raw(self):
